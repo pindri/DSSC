@@ -9,9 +9,9 @@ double f(const double x) {
   return ( 1./(1.+ x*x) );
 }
 
-double compute_pi(const double a, const double b, const int N) {
+double compute_pi(const double a, const double b, const unsigned int N) {
 
-  double h = (b-a)/(double)N;
+  const double h = (b-a)/(double)N;
   double x = a + h/2.;
   double pi = 0;
 
@@ -25,22 +25,26 @@ double compute_pi(const double a, const double b, const int N) {
 
 }
 
-int main(int argc, char* argv[]) {
+int main() {
 
-  int N = 100000000;
-  int a = 0;
-  int b = 1;
-  double global_result = 0.;
+  const unsigned int N = 100000000;
+  const int a = 0;
+  const int b = 1;
+  double serial_result = 0;
+  double global_result = 0;
 
   double start;
   double end;
 
   start = seconds();
-  double result = compute_pi(a,b,N);
+  serial_result = compute_pi(a,b,N);
   end = seconds();
 
- // printf("Serial pi = %.10f. Elapsed time = %fs.\n", result, end-start);
+#ifndef BENCHMARK
+  printf("Serial pi = %.10f. Elapsed time = %fs.\n", serial_result, end-start);
+#else
   printf("%f",  end-start);
+#endif
 
 
   start = seconds();
@@ -58,7 +62,6 @@ int main(int argc, char* argv[]) {
 
     double local_result = compute_pi(local_a, local_b, local_n);
 
-    //printf("Local a = %f\tLocal b = %f\tLocal n = %d\n", local_a, local_b, local_n);
 
 #pragma omp atomic
     global_result += local_result;
@@ -67,9 +70,11 @@ int main(int argc, char* argv[]) {
 
   end = seconds();
 
-
-  //printf("Parallel pi = %.10f. Elapsed time = %fs.\n", global_result, end - start);
+#ifndef BENCHMARK
+  printf("Parallel pi = %.10f. Elapsed time = %fs.\n", global_result, end - start);
+#else
   printf("\t%f\n",  end-start);
+#endif
 
 
   return 0;
