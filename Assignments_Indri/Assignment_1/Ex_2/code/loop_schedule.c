@@ -38,7 +38,18 @@ int main( int argc, char * argv[] ) {
   {
     nthreads = omp_get_num_threads();
 
-#pragma omp for schedule(static, 5)
+#pragma omp for schedule(static)
+    for (int i = 0; i < N; ++i) {
+      a[i] = omp_get_thread_num();
+    }
+
+#pragma omp single
+  {
+    printf("\nstatic\n");
+    print_usage(a, N, nthreads);
+  }
+
+#pragma omp for schedule(static, 1)
     for (int i = 0; i < N; ++i) {
       a[i] = omp_get_thread_num();
     }
@@ -49,7 +60,29 @@ int main( int argc, char * argv[] ) {
     print_usage(a, N, nthreads);
   }
 
-#pragma omp for schedule(dynamic, 5)
+#pragma omp for schedule(static, 10)
+    for (int i = 0; i < N; ++i) {
+      a[i] = omp_get_thread_num();
+    }
+
+#pragma omp single
+  {
+    printf("\nstatic, chunk size = 10\n");
+    print_usage(a, N, nthreads);
+  }
+
+#pragma omp for schedule(dynamic)
+    for (int i = 0; i < N; ++i) {
+      a[i] = omp_get_thread_num();
+    }
+
+#pragma omp single
+  {
+    printf("\ndynamic\n");
+    print_usage(a, N, nthreads);
+  }
+
+#pragma omp for schedule(dynamic, 1)
     for (int i = 0; i < N; ++i) {
       a[i] = omp_get_thread_num();
     }
@@ -60,7 +93,18 @@ int main( int argc, char * argv[] ) {
     print_usage(a, N, nthreads);
   }
 
+#pragma omp for schedule(dynamic, 10)
+    for (int i = 0; i < N; ++i) {
+      a[i] = omp_get_thread_num();
+    }
+
+#pragma omp single
+  {
+    printf("\ndynamic, chunk size = 10\n");
+    print_usage(a, N, nthreads);
   }
+
+  } // End of parallel secion.
   return 0;
 
 }
