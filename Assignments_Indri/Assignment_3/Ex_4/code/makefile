@@ -1,7 +1,7 @@
 MPICC = mpicc
 MPICCFLAGS = -O0 -ggdb -std=c11
 
-SRC = ring_sum.c
+SRC = src/ring_sum.c
 EXE = ring_sum.x
 
 all: $(EXE)

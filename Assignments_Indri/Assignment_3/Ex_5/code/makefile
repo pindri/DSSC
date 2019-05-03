@@ -1,7 +1,7 @@
 MPICC = mpicc
 MPICCFLAGS = -O0 -ggdb -std=c11
 
-SRC = identity.c
+SRC = src/identity.c
 EXE = identity.x
 
 all: $(EXE)
