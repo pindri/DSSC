@@ -44,3 +44,6 @@ overlapping the computation (Σ) and the communication (send-recv). In case of a
 considered a vector sum (element by element).
 
 Main references: [MPI 1.1 Documentation](https://www.mpi-forum.org/docs/mpi-1.1/mpi-11-html/mpi-report.html), [MPI 1.1 APIs description](https://www.mpi-forum.org/docs/mpi-1.1/mpi-11-html/node182.html).
+
+### Day 5
+Introduction to GPU computing and the CUDA language.     
