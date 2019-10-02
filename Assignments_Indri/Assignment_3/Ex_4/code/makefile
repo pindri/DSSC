@@ -1,13 +1,11 @@
 MPICC = mpicc
 MPICCFLAGS = -O0 -ggdb -std=c11
+SRC = src
 
-SRC = src/ring_sum.c
-EXE = ring_sum.x
+all: ring_sum_b.x ring_sum_non_b.x
 
-all: $(EXE)
-
-$(EXE): $(SRC)
-	$(MPICC) $(MPICCFLAGS) -o $@ $^
+%.x: $(SRC)/%.c
+	$(MPICC) $(MPICCFLAGS) -o $@ $<
 
 .PHONY: clean
 
