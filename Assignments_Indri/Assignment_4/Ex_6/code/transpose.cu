@@ -6,7 +6,7 @@
 
 
 // Compares two matrices element by element.
-int isTransposed (const int* a, const int* b, const int dim) {
+int isTransposed (const double* a, const double* b, const int dim) {
   for (int i = 0; i < dim; i++) {
     for (int j = 0; j < dim; j++) {
       if(b[j + i*dim] != a[i + j*dim]) return 0;
@@ -16,14 +16,14 @@ int isTransposed (const int* a, const int* b, const int dim) {
 }
 
 // Gpu naive transposition.
-__global__ void gpuNaiveTrans (const int* a, int* b, const int dim) {
+__global__ void gpuNaiveTrans (const double* a, double* b, const int dim) {
   int row = blockIdx.x * blockDim.x + threadIdx.x;
   int col = blockIdx.y * blockDim.y + threadIdx.y;
   b[row + col*dim] =  a[row*dim + col];
 }
 
 // Cpu optimised transposition.
-__global__ void gpuOptTrans (const int* a, int* b, const int dim) {
+__global__ void gpuOptTrans (const double* a, double* b, const int dim) {
   __shared__ double tmp[TILE_DIM][TILE_DIM];
   int row = blockIdx.x * blockDim.x + threadIdx.x;
   int col = blockIdx.y * blockDim.y + threadIdx.y;
@@ -33,9 +33,9 @@ __global__ void gpuOptTrans (const int* a, int* b, const int dim) {
 }
 
 
-void matrixFill (int* a, const int dim) {
+void matrixFill (double* a, const int dim) {
   for(int i = 0; i < dim; i++) {
-    a[i] = i + 1;
+    a[i] = (double) i;
   }
 }
 
@@ -43,16 +43,16 @@ void matrixFill (int* a, const int dim) {
 int main(int argc, char* argv[]) {
 
 
-  int* hostInput, * hostOutput;
-  int* devInput, * devOutput;
+  double* hostInput, * hostOutput;
+  double* devInput, * devOutput;
 
   // Allocate host memory.
-  hostInput = (int* )malloc(SIZE * sizeof(int));
-  hostOutput = (int* )malloc(SIZE * sizeof(int));
+  hostInput = (double* )malloc(SIZE * sizeof(double));
+  hostOutput = (double* )malloc(SIZE * sizeof(double));
 
   // Allocate device memory.
-  cudaMalloc((void**)&devInput, SIZE * sizeof(int));
-  cudaMalloc((void**)&devOutput, SIZE * sizeof(int));
+  cudaMalloc((void**)&devInput, SIZE * sizeof(double));
+  cudaMalloc((void**)&devOutput, SIZE * sizeof(double));
 
   // Dimension.
   dim3 grid, block;
@@ -70,7 +70,7 @@ int main(int argc, char* argv[]) {
 
 
   // Copy input to device.
-  cudaMemcpy(devInput, hostInput, SIZE * sizeof(int), cudaMemcpyHostToDevice);
+  cudaMemcpy(devInput, hostInput, SIZE * sizeof(double), cudaMemcpyHostToDevice);
 
   //// Timing.
   float elapsedTime = 0.0;
@@ -86,9 +86,10 @@ int main(int argc, char* argv[]) {
   cudaEventSynchronize(tEnd);
   cudaEventElapsedTime(&elapsedTime, tStart, tEnd);
   printf("Elapsed time: %fms\n", elapsedTime);
+  printf("Bandwidth: %f GB/s\n", 2 * SIZE * sizeof(double) / elapsedTime / 1000000);
 
   // Copy output to host.
-  cudaMemcpy(hostOutput, devOutput, SIZE * sizeof(int), cudaMemcpyDeviceToHost);
+  cudaMemcpy(hostOutput, devOutput, SIZE * sizeof(double), cudaMemcpyDeviceToHost);
   
   printf("Is the tranposition correct? %s\n",
          isTransposed(hostOutput, hostInput, N) ? "CORRECT" : "ERROR!" );
