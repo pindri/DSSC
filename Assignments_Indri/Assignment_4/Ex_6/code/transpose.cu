@@ -15,22 +15,48 @@ int isTransposed (const double* a, const double* b, const int dim) {
   return 1;
 }
 
+
+
 // Gpu naive transposition.
-__global__ void gpuNaiveTrans (const double* a, double* b, const int dim) {
-  int row = blockIdx.x * blockDim.x + threadIdx.x;
-  int col = blockIdx.y * blockDim.y + threadIdx.y;
-  b[row + col*dim] =  a[row*dim + col];
+__global__ void gpuNaiveTrans (double* a, double* b, const int size, const int brows) {
+
+  int col = blockIdx.x * TILE_DIM + threadIdx.x;
+  int row = blockIdx.y * TILE_DIM + threadIdx.y;
+  int width = gridDim.x * TILE_DIM;
+
+  for(int i = 0; i < TILE_DIM; i += brows) {
+    b[col * width + (row + i)] = a[(row + i) * width + col];
+  }
 }
 
-// Cpu optimised transposition.
-__global__ void gpuOptTrans (const double* a, double* b, const int dim) {
+
+
+// Gpu optimised transposition.
+__global__ void gpuOptTrans (double* a, double* b, const int size, const int brows) {
+
+  // Buffer on the shared memory.
   __shared__ double tmp[TILE_DIM][TILE_DIM];
-  int row = blockIdx.x * blockDim.x + threadIdx.x;
-  int col = blockIdx.y * blockDim.y + threadIdx.y;
-  tmp[threadIdx.x][threadIdx.y] = a[row*dim + col];
+
+  int col = blockIdx.x * TILE_DIM + threadIdx.x;
+  int row = blockIdx.y * TILE_DIM + threadIdx.y;
+  int width = gridDim.x * TILE_DIM;
+
+  // Transposition on buffer.
+  for(int i = 0; i < TILE_DIM; i += brows) {
+    tmp[threadIdx.y + i][threadIdx.x] = a[(row + i) * width + col];
+  }
+
   __syncthreads();
-  b[row + col*dim] =  tmp[threadIdx.x][threadIdx.y];
+
+  col = blockIdx.y * TILE_DIM + threadIdx.x;
+  row = blockIdx.x * TILE_DIM + threadIdx.y;
+
+  // Writing to output.
+  for(int i = 0; i < TILE_DIM; i += brows) {
+    b[col + width * (row + i)] = tmp[threadIdx.x][threadIdx.y + i];
+  }
 }
+
 
 
 void matrixFill (double* a, const int dim) {
@@ -40,8 +66,8 @@ void matrixFill (double* a, const int dim) {
 }
 
 
-int main(int argc, char* argv[]) {
 
+int main(int argc, char* argv[]) {
 
   double* hostInput, * hostOutput;
   double* devInput, * devOutput;
@@ -54,38 +80,40 @@ int main(int argc, char* argv[]) {
   cudaMalloc((void**)&devInput, SIZE * sizeof(double));
   cudaMalloc((void**)&devOutput, SIZE * sizeof(double));
 
-  // Dimension.
+  // Dimensions.
   dim3 grid, block;
-  block.x = atoi(argv[1]);
-  block.y = atoi(argv[2]);
-  grid.x = N/block.x;
-  grid.y = N/block.y;
+  block.x = TILE_DIM;
+  block.y = atoi(argv[1])/TILE_DIM; // Threads-per-block readed as input.
+  grid.x = N / TILE_DIM;
+  grid.y = N / TILE_DIM;
+
   printf("\n--------------------------\n");
   printf("--------------------------\n\n");
-  printf("Dimensions: block.x = %d, block.y = %d\n", block.x, block.y);
 
+  printf("Threads per block = %d\n\n", atoi(argv[1]));
+
+
+  /// NAIVE TRANSPOSE //
 
   // Initialise matricx.
   matrixFill(hostInput, SIZE);
 
-
   // Copy input to device.
   cudaMemcpy(devInput, hostInput, SIZE * sizeof(double), cudaMemcpyHostToDevice);
 
-  //// Timing.
+  // Timing.
   float elapsedTime = 0.0;
   cudaEvent_t tStart, tEnd;
   cudaEventCreate(&tStart);
   cudaEventCreate(&tEnd);
 
-
   cudaEventRecord(tStart);
-    gpuNaiveTrans<<< grid, block >>>(devInput, devOutput, N);
+    gpuNaiveTrans<<< grid, block >>>(devInput, devOutput, N, block.y);
   cudaEventRecord(tEnd);
 
   cudaEventSynchronize(tEnd);
   cudaEventElapsedTime(&elapsedTime, tStart, tEnd);
-  printf("Elapsed time: %fms\n", elapsedTime);
+  printf("NAIVE TRANSPOSE: Elapsed time: %fms\n", elapsedTime);
   printf("Bandwidth: %f GB/s\n", 2 * SIZE * sizeof(double) / elapsedTime / 1000000);
 
   // Copy output to host.
@@ -95,6 +123,37 @@ int main(int argc, char* argv[]) {
          isTransposed(hostOutput, hostInput, N) ? "CORRECT" : "ERROR!" );
 
 
+
+  /// OPTIMISED TRANSPOSE //
+
+  printf("\n\n");
+
+  // Initialise matricx.
+  matrixFill(hostInput, SIZE);
+
+  // Copy input to device.
+  cudaMemcpy(devInput, hostInput, SIZE * sizeof(double), cudaMemcpyHostToDevice);
+
+  // Timing.
+  elapsedTime = 0.0;
+
+  cudaEventRecord(tStart);
+    gpuOptTrans<<< grid, block >>>(devInput, devOutput, N, block.y);
+  cudaEventRecord(tEnd);
+
+  cudaEventSynchronize(tEnd);
+  cudaEventElapsedTime(&elapsedTime, tStart, tEnd);
+  printf("OPTIMISED TRANSPOSE: Elapsed time: %fms\n", elapsedTime);
+  printf("Bandwidth: %f GB/s\n", 2 * SIZE * sizeof(double) / elapsedTime / 1000000);
+
+  // Copy output to host.
+  cudaMemcpy(hostOutput, devOutput, SIZE * sizeof(double), cudaMemcpyDeviceToHost);
+  
+  printf("Is the tranposition correct? %s\n",
+         isTransposed(hostOutput, hostInput, N) ? "CORRECT" : "ERROR!" );
+
+
+
   // Freeing resources.
   free(hostInput);
   free(hostOutput);
@@ -102,8 +161,5 @@ int main(int argc, char* argv[]) {
   cudaFree(devOutput);
   cudaEventDestroy(tStart);
   cudaEventDestroy(tEnd);
-
-
-
 
 }

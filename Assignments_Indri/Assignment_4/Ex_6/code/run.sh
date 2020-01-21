@@ -2,13 +2,12 @@
 
 module load cudatoolkit
 
+> output.dat
+
 make -B
 
-for i in 2 4 8 16 32
+for i in 64 256 512 1024 
 do
-  for j in 2 4 8 16 32
-  do
-    ./transpose.x $i $j
-  done
+./transpose.x $i >> output.dat
 done
 
