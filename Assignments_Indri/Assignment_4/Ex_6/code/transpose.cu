@@ -18,7 +18,8 @@ int isTransposed (const double* a, const double* b, const int dim) {
 
 
 // Gpu naive transposition.
-__global__ void gpuNaiveTrans (double* a, double* b, const int size, const int brows) {
+__global__ void gpuNaiveTrans (double* a, double* b, const int size,
+                               const int brows) {
 
   int col = blockIdx.x * TILE_DIM + threadIdx.x;
   int row = blockIdx.y * TILE_DIM + threadIdx.y;
@@ -32,7 +33,8 @@ __global__ void gpuNaiveTrans (double* a, double* b, const int size, const int b
 
 
 // Gpu optimised transposition.
-__global__ void gpuOptTrans (double* a, double* b, const int size, const int brows) {
+__global__ void gpuOptTrans (double* a, double* b, const int size,
+                             const int brows) {
 
   // Buffer on the shared memory.
   __shared__ double tmp[TILE_DIM][TILE_DIM];
@@ -99,7 +101,8 @@ int main(int argc, char* argv[]) {
   matrixFill(hostInput, SIZE);
 
   // Copy input to device.
-  cudaMemcpy(devInput, hostInput, SIZE * sizeof(double), cudaMemcpyHostToDevice);
+  cudaMemcpy(devInput, hostInput, SIZE * sizeof(double),
+             cudaMemcpyHostToDevice);
 
   // Timing.
   float elapsedTime = 0.0;
@@ -114,10 +117,12 @@ int main(int argc, char* argv[]) {
   cudaEventSynchronize(tEnd);
   cudaEventElapsedTime(&elapsedTime, tStart, tEnd);
   printf("NAIVE TRANSPOSE: Elapsed time: %fms\n", elapsedTime);
-  printf("Bandwidth: %f GB/s\n", 2 * SIZE * sizeof(double) / elapsedTime / 1000000);
+  printf("Bandwidth: %f GB/s\n",
+         2 * SIZE * sizeof(double) / elapsedTime / 1000000);
 
   // Copy output to host.
-  cudaMemcpy(hostOutput, devOutput, SIZE * sizeof(double), cudaMemcpyDeviceToHost);
+  cudaMemcpy(hostOutput, devOutput, SIZE * sizeof(double),
+             cudaMemcpyDeviceToHost);
   
   printf("Is the tranposition correct? %s\n",
          isTransposed(hostOutput, hostInput, N) ? "CORRECT" : "ERROR!" );
@@ -132,7 +137,8 @@ int main(int argc, char* argv[]) {
   matrixFill(hostInput, SIZE);
 
   // Copy input to device.
-  cudaMemcpy(devInput, hostInput, SIZE * sizeof(double), cudaMemcpyHostToDevice);
+  cudaMemcpy(devInput, hostInput, SIZE * sizeof(double),
+             cudaMemcpyHostToDevice);
 
   // Timing.
   elapsedTime = 0.0;
@@ -144,10 +150,12 @@ int main(int argc, char* argv[]) {
   cudaEventSynchronize(tEnd);
   cudaEventElapsedTime(&elapsedTime, tStart, tEnd);
   printf("OPTIMISED TRANSPOSE: Elapsed time: %fms\n", elapsedTime);
-  printf("Bandwidth: %f GB/s\n", 2 * SIZE * sizeof(double) / elapsedTime / 1000000);
+  printf("Bandwidth: %f GB/s\n",
+         2 * SIZE * sizeof(double) / elapsedTime / 1000000);
 
   // Copy output to host.
-  cudaMemcpy(hostOutput, devOutput, SIZE * sizeof(double), cudaMemcpyDeviceToHost);
+  cudaMemcpy(hostOutput, devOutput, SIZE * sizeof(double),
+             cudaMemcpyDeviceToHost);
   
   printf("Is the tranposition correct? %s\n",
          isTransposed(hostOutput, hostInput, N) ? "CORRECT" : "ERROR!" );
