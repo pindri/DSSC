@@ -70,7 +70,8 @@ int main(int argc, char* argv[]) {
     MPI_File file;
     MPI_Status status;
     MPI_Offset offset;
-    MPI_File_open(MPI_COMM_WORLD, "output.dat", MPI_MODE_CREATE|MPI_MODE_WRONLY, MPI_INFO_NULL, &file);
+    MPI_File_open(MPI_COMM_WORLD, "output.dat",
+                  MPI_MODE_CREATE|MPI_MODE_WRONLY, MPI_INFO_NULL, &file);
 
 
     if (rank != 0) {
@@ -89,7 +90,8 @@ int main(int argc, char* argv[]) {
           // Corrects number of rows in case of rest.
           if (pes >= rest && rest != 0) corr = 1;
           for (int row = 0; row < local_N - corr; row++) {
-            MPI_Recv(M[row], N, MPI_INT, pes, 101, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            MPI_Recv(M[row], N, MPI_INT, pes, 101,
+                     MPI_COMM_WORLD, MPI_STATUS_IGNORE);
           }
           print_matrix(M, local_N - corr, N);
         }
@@ -111,10 +113,12 @@ int main(int argc, char* argv[]) {
 
           // Receive from each processor and write with the correct offset.
           for (int row = 0; row < local_N - corr; row++) {
-            MPI_Recv(M[row], N, MPI_INT, pes, 101, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-            offset = ( corr * (rest * local_N + (pes - rest) * (local_N - 1)) +
-                (1 - corr) * (local_N * pes) + row ) * N * sizeof(int);
-                // Can probably be written more clearly.
+            MPI_Recv(M[row], N, MPI_INT, pes, 101,
+                     MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
+            offset = (corr * (rest * local_N + (pes - rest) * (local_N - 1)) +
+                     (1 - corr) * (local_N * pes) + row) * N * sizeof(int);
+
             MPI_File_seek(file, offset, MPI_SEEK_SET);
             MPI_File_write(file, M[row], N, MPI_INT, &status);
           }
