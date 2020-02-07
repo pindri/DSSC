@@ -1,13 +1,11 @@
 MPICC = mpicc
 MPICCFLAGS = -O0 -ggdb -std=c11
+SRC = src
 
-SRC = src/identity.c
-EXE = identity.x
+all: identity.x identity_non_b.x
 
-all: $(EXE)
-
-$(EXE): $(SRC)
-	$(MPICC) $(MPICCFLAGS) -o $@ $^
+%.x: $(SRC)/%.c
+	$(MPICC) $(MPICCFLAGS) -o $@ $<
 
 .PHONY: clean
 

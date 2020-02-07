@@ -21,6 +21,13 @@ void print_matrix_file(int* M, int rows, int cols, FILE* file) {
   }
 }
 
+void swap(int** M1, int** M2) {
+  int* tmp = *M1;
+  *M1 = *M2;
+  *M2 = tmp;
+}
+
+
 
 
 int main(int argc, char* argv[]) {
@@ -64,6 +71,14 @@ int main(int argc, char* argv[]) {
     }
 
 
+    //Open output binary file.
+    MPI_File file;
+    MPI_Status status;
+    MPI_Offset offset;
+    MPI_File_open(MPI_COMM_WORLD, "output.dat",
+	          MPI_MODE_CREATE|MPI_MODE_WRONLY, MPI_INFO_NULL, &file);
+
+
     if (rank != 0) {
 
       // Send partial matricess to process 0.
@@ -71,36 +86,57 @@ int main(int argc, char* argv[]) {
 
     } else { // In processor 0.
 
+      // Receiving buffer.
+      int* buff = (int* )malloc(local_N * N * sizeof(int));
+
       if (N <= 10) { // Print to console.
 
-        print_matrix(M, local_N, N);
         for (int pes = 1; pes < npes; pes++) {
-          //printf("pes: %d\n", pes);
-          if (pes >= rest && rest != 0) corr = 1; // Correct printing in case of rest.
-          MPI_Recv(M, local_N * N, MPI_INT, pes, 101, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+          if (pes > rest && rest != 0) corr = 1; // Correct printing in case of rest.
+          MPI_Irecv(buff, local_N * N, MPI_INT, pes, 101, MPI_COMM_WORLD, &request);
           print_matrix(M, local_N - corr, N);
+          MPI_Wait(&request, MPI_STATUS_IGNORE);
+          swap(&buff, &M);
         }
+        if (rest != 0) corr = 1; // Correct printing in case of rest.
+        print_matrix(M, local_N - corr, N);
 
       } else { // N > 10, print to file.
         FILE* file = fopen("output.dat", "w");
 
-        print_matrix_file(M, local_N, N, file);
         for (int pes = 1; pes < npes; pes++) {
-          if (pes >= rest && rest != 0) corr = 1; // Correct printing in case of rest.
-          MPI_Recv(M, local_N * N, MPI_INT, pes, 101, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+          if (pes > rest && rest != 0) corr = 1; // Correct printing in case of rest.
+          MPI_Irecv(buff, local_N * N, MPI_INT, pes, 101, MPI_COMM_WORLD, &request);
           print_matrix_file(M, local_N - corr, N, file);
+          MPI_Wait(&request, MPI_STATUS_IGNORE);
+          swap(&buff, &M);
         }
+        if (rest != 0) corr = 1; // Correct printing in case of rest.
+        print_matrix_file(M, local_N - corr, N, file);
         fclose(file);
 
       }
+
+    free(buff); 
+
 
     }
 
     free(M);
 
+    MPI_File_close(&file);
 
   MPI_Finalize();
 
   return 0;
 
 }
+
+
+
+    //deallocate_matrix(M, local_N);
+
+    // Close binary file.
+    //MPI_File_close(&file);
+
+    // Close binary file.
