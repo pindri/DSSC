@@ -41,7 +41,6 @@ double compute_atomic_pi(const double a, const double b, const unsigned int N) {
 
     double local_result = compute_pi(local_a, local_b, local_n);
 
-
 #pragma omp atomic
     global_result += local_result;
 
@@ -67,8 +66,7 @@ double compute_critical_pi(const double a, const double b, const unsigned int N)
 
     double local_result = compute_pi(local_a, local_b, local_n);
 
-
-#pragma omp critical
+#pragma omp critical // Basically serial.
     global_result += local_result;
 
   } // Ended parallel section.
@@ -90,7 +88,6 @@ double compute_reduction_pi(const double a, const double b, const unsigned int N
     double local_a = a + tid*local_n*h;
     double local_b = local_a + local_n*h;
 
-
     global_result += compute_pi(local_a, local_b, local_n);
 
   } // Ended parallel section.
@@ -111,7 +108,8 @@ int main() {
   double start;
   double end;
 
-  // Serial computation.
+
+  // SERIAL.
   start = seconds();
   serial_result = compute_pi(a, b, N);
   end = seconds();
@@ -123,7 +121,7 @@ int main() {
 #endif
 
 
-  // OMP ATOMIC
+  // OMP ATOMIC.
   start = seconds();
   atomic_result = compute_atomic_pi(a, b, N);
   end = seconds();
@@ -134,7 +132,8 @@ int main() {
   printf("\t%f",  end-start);
 #endif
 
-  // OMP CRITICAL
+
+  // OMP CRITICAL.
   start = seconds();
   critical_result = compute_critical_pi(a, b, N);
   end = seconds();
@@ -145,7 +144,8 @@ int main() {
   printf("\t%f",  end-start);
 #endif
 
-  // OMP REDUCTION
+
+  // OMP REDUCTION.
   start = seconds();
   reduction_result = compute_reduction_pi(a, b, N);
   end = seconds();
