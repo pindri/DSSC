@@ -81,7 +81,7 @@ int main(int argc, char* argv[]) {
       // Receiving buffer.
       int* buff = (int* )malloc(local_N * N * sizeof(int));
 
-      if (N <= 10) { // Print to console.
+      if (N < 10) { // Print to console.
 
         for (int pes = 1; pes < npes; pes++) {
           if (pes > rest && rest != 0) corr = 1; // Correct printing in case of rest.

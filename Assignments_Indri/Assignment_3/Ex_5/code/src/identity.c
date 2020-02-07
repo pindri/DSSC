@@ -71,7 +71,7 @@ int main(int argc, char* argv[]) {
 
     } else { // In processor 0.
 
-      if (N <= 10) { // Print to console.
+      if (N < 10) { // Print to console.
 
         print_matrix(M, local_N, N);
         for (int pes = 1; pes < npes; pes++) {
