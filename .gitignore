@@ -3,3 +3,4 @@
 # ignore 'report' and 'draft' folders
 **/report
 **/draft
+**/.ipynb_checkpoints/
