@@ -68,16 +68,15 @@ int main(int argc, char* argv[]) {
 
     printf("After computation: proc %d, sum %d\n", rank, sum[0]);
 
+    free(X);
+    free(Xright);
+    free(sum);
+
     MPI_Finalize();
 
   if (rank == printer) {
     printf("I am processor %d, the elapsed time is %f\n", rank, t2 - t1);
   }
-
-
-  free(X);
-  free(Xright);
-  free(sum);
 
 }
 
