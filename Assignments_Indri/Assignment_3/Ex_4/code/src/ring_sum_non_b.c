@@ -24,7 +24,7 @@ int main(int argc, char* argv[]) {
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &npes);
 
-    MPI_Request request; // Request handler, used to check communication status.
+    MPI_Request request; // Request handler, checks communication status.
 
     int* X = (int*)malloc(sizeof(int) * SIZE);
     int* Xright = (int*)malloc(sizeof(int) * SIZE);
@@ -44,13 +44,16 @@ int main(int argc, char* argv[]) {
     for (int j = 0; j < npes; j++) {
 
       // Sent X to the left processor, receive from the right processor..
-      MPI_Isend(X, SIZE, MPI_INT, LEFT_PROC(rank, npes), 101, MPI_COMM_WORLD, &request);
-      MPI_Recv(Xright, SIZE, MPI_INT, RIGHT_PROC(rank, npes), 101, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      MPI_Isend(X, SIZE, MPI_INT, LEFT_PROC(rank, npes), 101,
+                MPI_COMM_WORLD, &request);
 
-      // Sum received content.
+      // Update sum.
       for (int j = 0; j < SIZE; j++) {
-        sum[j] += Xright[j];
+        sum[j] += X[j];
       }
+
+      MPI_Recv(Xright, SIZE, MPI_INT, RIGHT_PROC(rank, npes), 101,
+               MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
       // Wait for the Isend procedure to be completed.
       MPI_Wait(&request, MPI_STATUS_IGNORE);
