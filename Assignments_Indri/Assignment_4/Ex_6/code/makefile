@@ -1,7 +1,7 @@
 CC = nvcc
 EXE = transpose.x
 
-SRC = transpose.cu
+SRC = src/transpose.cu
 
 all: $(EXE)
 
