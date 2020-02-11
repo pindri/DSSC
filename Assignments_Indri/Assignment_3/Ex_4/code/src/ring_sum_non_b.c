@@ -24,7 +24,8 @@ int main(int argc, char* argv[]) {
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &npes);
 
-    MPI_Request request; // Request handler, checks communication status.
+    MPI_Request requestSend; // Request handler, checks communication status.
+    MPI_Request requestRecv; // Request handler, checks communication status.
 
     int* X = (int*)malloc(sizeof(int) * SIZE);
     int* Xright = (int*)malloc(sizeof(int) * SIZE);
@@ -45,18 +46,19 @@ int main(int argc, char* argv[]) {
 
       // Sent X to the left processor, receive from the right processor..
       MPI_Isend(X, SIZE, MPI_INT, LEFT_PROC(rank, npes), 101,
-                MPI_COMM_WORLD, &request);
+                MPI_COMM_WORLD, &requestSend);
+
+      MPI_Irecv(Xright, SIZE, MPI_INT, RIGHT_PROC(rank, npes), 101,
+               MPI_COMM_WORLD, &requestRecv);
 
       // Update sum.
       for (int j = 0; j < SIZE; j++) {
         sum[j] += X[j];
       }
 
-      MPI_Recv(Xright, SIZE, MPI_INT, RIGHT_PROC(rank, npes), 101,
-               MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-
-      // Wait for the Isend procedure to be completed.
-      MPI_Wait(&request, MPI_STATUS_IGNORE);
+      // Wait for the Isend and Irecv procedures to be completed.
+      MPI_Wait(&requestSend, MPI_STATUS_IGNORE);
+      MPI_Wait(&requestRecv, MPI_STATUS_IGNORE);
 
       // The content of a processor is updated.
       swap(&X, &Xright);
@@ -68,15 +70,16 @@ int main(int argc, char* argv[]) {
 
     printf("After computation: proc %d, sum %d\n", rank, sum[0]);
 
-    free(X);
-    free(Xright);
-    free(sum);
+	  free(X);
+	  free(Xright);
+	  free(sum);
 
     MPI_Finalize();
 
-  if (rank == printer) {
-    printf("I am processor %d, the elapsed time is %f\n", rank, t2 - t1);
-  }
+    if (rank == printer) {
+      printf("Elapsed time: %f\n", rank, t2 - t1);
+    }
+
 
 }
 
